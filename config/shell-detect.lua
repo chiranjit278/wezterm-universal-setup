@@ -169,15 +169,16 @@ local function get_default_shell(available_shells)
    end
 
    -- 优先级顺序
+   -- USER_PREFERRED_SHELL 会在安装时被替换为用户选择的 shell
    local priority = {}
 
    if platform.is_win then
       priority = { 'PowerShell Core', 'PowerShell Desktop', 'Command Prompt' }
    elseif platform.is_mac then
-      priority = { 'Fish', 'Zsh', 'Bash' }
+      priority = { 'USER_PREFERRED_SHELL', 'Fish', 'Bash' }
    else
       -- Linux
-      priority = { 'Fish', 'Bash', 'Zsh' }
+      priority = { 'USER_PREFERRED_SHELL', 'Fish', 'Bash' }
    end
 
    -- 根据优先级选择

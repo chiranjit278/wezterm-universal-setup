@@ -12,7 +12,10 @@ $ErrorActionPreference = "Stop"
 $Script:WEZTERM_CONFIG_REPO = "https://github.com/KevinSilvester/wezterm-config.git"
 $Script:WEZTERM_CONFIG_DIR = Join-Path $env:USERPROFILE ".config\wezterm"
 $Script:SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Script:BACKUP_DIR = Join-Path $env:USERPROFILE ".config\wezterm-backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+
+# 全局变量 - 用户选择的 Shell
+$Script:SELECTED_SHELL = ""
+$Script:SELECTED_SHELL_PATH = ""
 
 # 图标定义
 $Script:Icons = @{
@@ -176,7 +179,94 @@ function Test-Dependencies {
     Write-Host ""
 }
 
-# 检查 WezTerm
+# 检测并选择 Shell
+function Select-Shell {
+    Write-Step "$($Icons.Sparkle) 检测 Shell 环境"
+
+    # 检测所有可用的 shell
+    $shells = @("pwsh", "powershell", "bash", "zsh", "fish", "nu", "cmd")
+    $availableShells = @()
+    $currentShell = (Get-Process -Id $PID).Parent.ProcessName.ToLower()
+
+    Write-Log "当前运行 Shell: $currentShell" -Level INFO
+    Write-Host ""
+
+    # 检测可用 shell
+    foreach ($shell in $shells) {
+        $cmd = Get-Command $shell -ErrorAction SilentlyContinue
+        if ($cmd) {
+            $shellPath = $cmd.Source
+            $shellObj = [PSCustomObject]@{
+                Name = $shell
+                Path = $shellPath
+            }
+            $availableShells += $shellObj
+
+            if ($shell -eq $currentShell) {
+                Write-Log "$shell (当前) - $shellPath" -Level SUCCESS
+            } else {
+                Write-Log "  $shell - $shellPath" -Level INFO
+            }
+        }
+    }
+
+    if ($availableShells.Count -eq 0) {
+        Write-Log "未检测到任何已知的 Shell" -Level ERROR
+        return
+    }
+
+    Write-Host ""
+    Write-Log "检测到 $($availableShells.Count) 个可用的 Shell" -Level INFO
+    Write-Host ""
+
+    # 让用户选择
+    Write-Host "请选择默认 Shell:" -ForegroundColor Cyan
+    Write-Host ""
+
+    for ($i = 0; $i -lt $availableShells.Count; $i++) {
+        $num = $i + 1
+        $shell = $availableShells[$i]
+
+        if ($shell.Name -eq $currentShell) {
+            Write-Host "  $num) " -ForegroundColor Green -NoNewline
+            Write-Host "$($shell.Name)" -ForegroundColor Green -NoNewline
+            Write-Host " (当前) - " -NoNewline
+            Write-Host $shell.Path -ForegroundColor DarkGray
+        } else {
+            Write-Host "  $num) " -ForegroundColor White -NoNewline
+            Write-Host "$($shell.Name) - " -NoNewline
+            Write-Host $shell.Path -ForegroundColor DarkGray
+        }
+    }
+
+    Write-Host ""
+    Write-Host "  0) 跳过此步骤,使用系统默认" -ForegroundColor DarkGray
+    Write-Host ""
+
+    # 读取用户选择
+    do {
+        $choice = Read-Host "  请输入选项 [0-$($availableShells.Count)]"
+
+        if ($choice -eq "0") {
+            Write-Log "使用系统默认 Shell" -Level INFO
+            Write-Host ""
+            return
+        } elseif ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $availableShells.Count) {
+            $selectedIndex = [int]$choice - 1
+            $Script:SELECTED_SHELL = $availableShells[$selectedIndex].Name
+            $Script:SELECTED_SHELL_PATH = $availableShells[$selectedIndex].Path
+
+            Write-Host ""
+            Write-Log "已选择: $SELECTED_SHELL ($SELECTED_SHELL_PATH)" -Level SUCCESS
+            Write-Host ""
+            return
+        } else {
+            Write-Host "  无效选择,请重试" -ForegroundColor Red
+        }
+    } while ($true)
+}
+
+# 测试 WezTerm
 function Test-WezTerm {
     Write-Step "$($Icons.Gear) 检查 WezTerm 安装状态"
 
@@ -203,22 +293,21 @@ function Test-WezTerm {
     }
 }
 
-# 备份现有配置
-function Backup-ExistingConfig {
+# 清理现有配置(准备覆盖)
+function Prepare-ConfigDir {
     if (Test-Path $WEZTERM_CONFIG_DIR) {
-        Write-Step "$($Icons.Folder) 备份现有配置"
+        Write-Step "$($Icons.Folder) 清理现有配置"
 
-        Write-Host "  源目录: " -NoNewline -ForegroundColor Cyan
+        Write-Host "  配置目录已存在,将被覆盖" -ForegroundColor Yellow
+        Write-Host "  位置: " -NoNewline -ForegroundColor Cyan
         Write-Host $WEZTERM_CONFIG_DIR
-        Write-Host "  目标:   " -NoNewline -ForegroundColor Cyan
-        Write-Host $BACKUP_DIR
         Write-Host ""
 
         try {
-            Move-Item -Path $WEZTERM_CONFIG_DIR -Destination $BACKUP_DIR -Force
-            Write-Log "备份完成" -Level SUCCESS
+            Remove-Item -Path $WEZTERM_CONFIG_DIR -Recurse -Force
+            Write-Log "已清理旧配置" -Level SUCCESS
         } catch {
-            Write-Log "备份失败: $_" -Level ERROR
+            Write-Log "清理失败: $_" -Level ERROR
         }
 
         Write-Host ""
@@ -276,56 +365,65 @@ function Install-ShellDetect {
     Write-Host ""
 }
 
-# 更新配置
-function Update-Config {
-    Write-Step "$($Icons.Gear) 更新配置文件"
+# 应用用户选择的 Shell
+function Apply-ShellPreference {
+    $shellDetectFile = Join-Path $WEZTERM_CONFIG_DIR "config\shell-detect.lua"
 
-    $configInit = Join-Path $WEZTERM_CONFIG_DIR "config\init.lua"
-
-    if (-not (Test-Path $configInit)) {
-        Write-Log "配置文件不存在" -Level ERROR
-        Write-Host ""
+    if (-not (Test-Path $shellDetectFile)) {
+        Write-Log "未找到 shell-detect.lua" -Level WARN
         return
     }
 
-    # 备份
-    Copy-Item $configInit -Destination "$configInit.backup" -Force
-    Write-Log "已创建配置备份" -Level INFO
+    # 确定要设置的shell (首字母大写以匹配label)
+    $preferredShell = ""
+    if ($SELECTED_SHELL) {
+        $preferredShell = switch ($SELECTED_SHELL) {
+            "bash" { "Bash" }
+            "zsh" { "Zsh" }
+            "fish" { "Fish" }
+            "pwsh" { "PowerShell Core" }
+            "powershell" { "PowerShell Desktop" }
+            "nu" { "Nushell" }
+            "cmd" { "Command Prompt" }
+            default { $SELECTED_SHELL }
+        }
 
-    # 读取并修改配置
-    $content = Get-Content $configInit -Raw
-
-    if ($content -match "require\('config\.launch'\)") {
-        $newContent = $content -replace `
-            "require\('config\.launch'\)", `
-            @"
--- require('config.launch') -- 已被自动检测替代
--- 使用自动检测的 shell 配置
-local launch_config = require('config.launch-auto')
-for k, v in pairs(launch_config) do
-   config[k] = v
-end
-"@
-
-        Set-Content -Path $configInit -Value $newContent -NoNewline
-        Write-Log "已启用 Shell 自动检测" -Level SUCCESS
+        Write-Log "应用 Shell 优先级: $preferredShell" -Level INFO
     } else {
-        Write-Log "未找到 launch 配置" -Level WARN
+        # 默认使用 PowerShell Core
+        $preferredShell = "PowerShell Core"
+        Write-Log "使用默认 Shell 优先级: $preferredShell" -Level INFO
     }
+
+    # 替换占位符
+    $content = Get-Content $shellDetectFile -Raw
+    $newContent = $content -replace 'USER_PREFERRED_SHELL', $preferredShell
+    Set-Content -Path $shellDetectFile -Value $newContent -NoNewline
 
     Write-Host ""
 }
 
-# 检测 Shell 环境
-function Invoke-ShellDetection {
-    Write-Step "$($Icons.Sparkle) 检测 Shell 环境"
+# 更新配置
+function Update-Config {
+    Write-Step "$($Icons.Gear) 更新配置文件"
 
-    $detectScript = Join-Path $SCRIPT_DIR "scripts\detect-shell.ps1"
+    $weztermConfig = Join-Path $WEZTERM_CONFIG_DIR "wezterm.lua"
 
-    if (Test-Path $detectScript) {
-        & $detectScript
+    if (-not (Test-Path $weztermConfig)) {
+        Write-Log "wezterm.lua 不存在" -Level ERROR
+        Write-Host ""
+        return
+    }
+
+    # 替换 config.launch 为 config.launch-auto
+    $content = Get-Content $weztermConfig -Raw
+
+    if ($content -match "require\('config\.launch'\)") {
+        $newContent = $content -replace "require\('config\.launch'\)", "require('config.launch-auto')"
+        Set-Content -Path $weztermConfig -Value $newContent -NoNewline
+        Write-Log "已启用 Shell 自动检测" -Level SUCCESS
     } else {
-        Write-Log "检测脚本不存在" -Level WARN
+        Write-Log "未找到 launch 配置" -Level WARN
     }
 
     Write-Host ""
@@ -349,9 +447,9 @@ function Show-Completion {
     Write-Host "  配置目录: " -NoNewline -ForegroundColor White
     Write-Host $WEZTERM_CONFIG_DIR
 
-    if (Test-Path $BACKUP_DIR) {
-        Write-Host "  备份目录: " -NoNewline -ForegroundColor White
-        Write-Host $BACKUP_DIR
+    if ($SELECTED_SHELL) {
+        Write-Host "  默认 Shell: " -NoNewline -ForegroundColor White
+        Write-Host $SELECTED_SHELL -ForegroundColor Green
     }
 
     Write-Host ""
@@ -360,7 +458,12 @@ function Show-Completion {
     Write-Host "  1. " -NoNewline -ForegroundColor White
     Write-Host "启动或重启 WezTerm"
     Write-Host "  2. " -NoNewline -ForegroundColor White
-    Write-Host "配置将自动检测您的 shell 环境"
+    if ($SELECTED_SHELL) {
+        Write-Host "WezTerm 将使用您选择的 " -NoNewline
+        Write-Host $SELECTED_SHELL -ForegroundColor Green
+    } else {
+        Write-Host "配置将自动检测您的 shell 环境"
+    }
     Write-Host "  3. " -NoNewline -ForegroundColor White
     Write-Host "按 " -NoNewline
     Write-Host "F2" -ForegroundColor Magenta -NoNewline
@@ -390,12 +493,13 @@ function Main {
     try {
         Write-Banner
         Test-Dependencies
+        Select-Shell
         Test-WezTerm
-        Backup-ExistingConfig
+        Prepare-ConfigDir        # 清理现有配置,不备份
         Get-ConfigRepo
         Install-ShellDetect
+        Apply-ShellPreference    # 应用用户选择
         Update-Config
-        Invoke-ShellDetection
         Show-Completion
     } catch {
         Write-Host ""

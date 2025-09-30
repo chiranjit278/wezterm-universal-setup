@@ -56,13 +56,24 @@ get_shell_path() {
 
 # 检测所有可用的 shell
 detect_available_shells() {
-    local shells=("bash" "zsh" "fish" "pwsh" "nu")
+    # pwsh: PowerShell Core (跨平台)
+    # powershell: Windows PowerShell 5.x (Windows/WSL)
+    local shells=("bash" "zsh" "fish" "pwsh" "powershell" "nu")
     local available_shells=()
 
     for shell in "${shells[@]}"; do
+        local shell_path=""
+
+        # 优先检测原生命令
         if check_shell_available "$shell"; then
-            local shell_path
             shell_path=$(get_shell_path "$shell")
+        # WSL环境下检测Windows PowerShell
+        elif [[ "$shell" == "powershell" ]] && command -v powershell.exe &>/dev/null; then
+            shell_path=$(command -v powershell.exe 2>/dev/null)
+        fi
+
+        # 如果找到了shell,添加到列表
+        if [[ -n "$shell_path" ]]; then
             available_shells+=("$shell:$shell_path")
         fi
     done

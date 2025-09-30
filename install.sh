@@ -20,7 +20,10 @@ readonly NC='\033[0m'
 readonly WEZTERM_CONFIG_REPO="https://github.com/KevinSilvester/wezterm-config.git"
 readonly WEZTERM_CONFIG_DIR="${HOME}/.config/wezterm"
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly BACKUP_DIR="${HOME}/.config/wezterm-backup-$(date +%Y%m%d-%H%M%S)"
+
+# 全局变量 - 用户选择的 Shell
+SELECTED_SHELL=""
+SELECTED_SHELL_PATH=""
 
 # 图标定义
 readonly ICON_CHECK="✓"
@@ -189,19 +192,17 @@ check_wezterm() {
     fi
 }
 
-# 备份现有配置
-backup_existing_config() {
+# 清理现有配置(准备覆盖)
+prepare_config_dir() {
     if [[ -d "$WEZTERM_CONFIG_DIR" ]]; then
-        log_step "${ICON_FOLDER} 备份现有配置"
+        log_step "${ICON_FOLDER} 清理现有配置"
 
-        echo -e "${CYAN}  源目录:${NC} ${WEZTERM_CONFIG_DIR}"
-        echo -e "${CYAN}  目标:${NC} ${BACKUP_DIR}"
+        echo -e "${YELLOW}  配置目录已存在,将被覆盖${NC}"
+        echo -e "${CYAN}  位置:${NC} ${WEZTERM_CONFIG_DIR}"
         echo
 
-        mv "$WEZTERM_CONFIG_DIR" "$BACKUP_DIR" 2>/dev/null && \
-            log_success "备份完成" || \
-            log_error "备份失败"
-
+        rm -rf "$WEZTERM_CONFIG_DIR"
+        log_success "已清理旧配置"
         echo
     fi
 }
@@ -253,34 +254,57 @@ install_shell_detect() {
     echo
 }
 
+# 应用用户选择的 Shell
+apply_shell_preference() {
+    local shell_detect_file="${WEZTERM_CONFIG_DIR}/config/shell-detect.lua"
+
+    if [[ ! -f "$shell_detect_file" ]]; then
+        log_warn "未找到 shell-detect.lua"
+        return 0
+    fi
+
+    # 确定要设置的shell (首字母大写以匹配label)
+    local preferred_shell=""
+    if [[ -n "$SELECTED_SHELL" ]]; then
+        case "$SELECTED_SHELL" in
+            bash) preferred_shell="Bash" ;;
+            zsh) preferred_shell="Zsh" ;;
+            fish) preferred_shell="Fish" ;;
+            pwsh) preferred_shell="PowerShell Core" ;;
+            powershell) preferred_shell="PowerShell Desktop" ;;
+            nu) preferred_shell="Nushell" ;;
+            *) preferred_shell="$SELECTED_SHELL" ;;
+        esac
+
+        log_info "应用 Shell 优先级: ${GREEN}${preferred_shell}${NC}"
+    else
+        # 默认使用Zsh
+        preferred_shell="Zsh"
+        log_info "使用默认 Shell 优先级: ${GREEN}${preferred_shell}${NC}"
+    fi
+
+    # 替换占位符
+    sed -i "s/USER_PREFERRED_SHELL/${preferred_shell}/g" "$shell_detect_file"
+
+    echo
+}
+
 # 更新配置
 update_config() {
     log_step "${ICON_GEAR} 更新配置文件"
 
-    local config_init="${WEZTERM_CONFIG_DIR}/config/init.lua"
+    local wezterm_config="${WEZTERM_CONFIG_DIR}/wezterm.lua"
 
-    if [[ ! -f "$config_init" ]]; then
-        log_error "配置文件不存在"
+    if [[ ! -f "$wezterm_config" ]]; then
+        log_error "wezterm.lua 不存在"
         echo
         return 1
     fi
 
-    # 备份
-    cp "$config_init" "${config_init}.backup"
-    log_info "已创建配置备份"
-
-    # 修改配置
-    if grep -q "require('config.launch')" "$config_init"; then
-        sed -i.bak "s/require('config\.launch')/-- require('config.launch') -- 已被自动检测替代/" "$config_init"
-        sed -i.bak "/-- require('config\.launch')/a\\
--- 使用自动检测的 shell 配置\\
-local launch_config = require('config.launch-auto')\\
-for k, v in pairs(launch_config) do\\
-   config[k] = v\\
-end" "$config_init"
-
+    # 替换 config.launch 为 config.launch-auto
+    if grep -q "require('config\.launch')" "$wezterm_config"; then
+        sed -i "s/require('config\.launch')/require('config.launch-auto')/g" "$wezterm_config"
         log_success "已启用 Shell 自动检测"
-        rm -f "${config_init}.bak"
     else
         log_warn "未找到 launch 配置"
     fi
@@ -288,19 +312,103 @@ end" "$config_init"
     echo
 }
 
-# 检测 Shell 环境
-detect_shell_env() {
+# 检测并选择 Shell
+detect_and_select_shell() {
     log_step "${ICON_SPARKLE} 检测 Shell 环境"
 
-    local detect_script="${SCRIPT_DIR}/scripts/detect-shell.sh"
+    # 检测所有可用的 shell
+    # pwsh: PowerShell Core (跨平台)
+    # powershell: Windows PowerShell 5.x (Windows/WSL)
+    local shells=("bash" "zsh" "fish" "pwsh" "powershell" "nu")
+    local available_shells=()
+    local shell_paths=()
+    local current_shell=""
 
-    if [[ -f "$detect_script" ]]; then
-        bash "$detect_script"
-    else
-        log_warn "检测脚本不存在"
+    # 获取当前默认 shell
+    if [[ -n "${SHELL:-}" ]]; then
+        current_shell=$(basename "$SHELL")
+    fi
+
+    log_info "当前默认 Shell: ${GREEN}${current_shell}${NC}"
+    echo
+
+    # 检测可用 shell
+    for shell in "${shells[@]}"; do
+        local shell_path=""
+
+        # 优先检测原生命令
+        if command -v "$shell" &>/dev/null; then
+            shell_path=$(command -v "$shell")
+        # WSL环境下检测Windows PowerShell
+        elif [[ "$shell" == "powershell" ]] && command -v powershell.exe &>/dev/null; then
+            shell_path=$(command -v powershell.exe)
+        fi
+
+        # 如果找到了shell,添加到列表
+        if [[ -n "$shell_path" ]]; then
+            available_shells+=("$shell")
+            shell_paths+=("$shell_path")
+
+            if [[ "$shell" == "$current_shell" ]]; then
+                log_success "${shell} (当前) ${DIM}- ${shell_path}${NC}"
+            else
+                log_info "  ${shell} ${DIM}- ${shell_path}${NC}"
+            fi
+        fi
+    done
+
+    if [[ ${#available_shells[@]} -eq 0 ]]; then
+        log_error "未检测到任何已知的 Shell"
+        return 1
     fi
 
     echo
+    log_info "检测到 ${#available_shells[@]} 个可用的 Shell"
+    echo
+
+    # 让用户选择
+    echo -e "${CYAN}${BOLD}请选择默认 Shell:${NC}"
+    echo
+
+    for i in "${!available_shells[@]}"; do
+        local num=$((i + 1))
+        local shell="${available_shells[$i]}"
+        local path="${shell_paths[$i]}"
+
+        if [[ "$shell" == "$current_shell" ]]; then
+            echo -e "  ${GREEN}${num})${NC} ${GREEN}${shell}${NC} (当前) ${DIM}- ${path}${NC}"
+        else
+            echo -e "  ${WHITE}${num})${NC} ${shell} ${DIM}- ${path}${NC}"
+        fi
+    done
+
+    echo
+    echo -e "  ${DIM}0) 跳过此步骤,使用系统默认${NC}"
+    echo
+
+    # 读取用户选择
+    local choice=""
+    while true; do
+        echo -n "  请输入选项 [0-${#available_shells[@]}]: "
+        read -r choice
+
+        if [[ "$choice" == "0" ]]; then
+            log_info "使用系统默认 Shell: ${current_shell}"
+            echo
+            return 0
+        elif [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le ${#available_shells[@]} ]]; then
+            local selected_index=$((choice - 1))
+            SELECTED_SHELL="${available_shells[$selected_index]}"
+            SELECTED_SHELL_PATH="${shell_paths[$selected_index]}"
+
+            echo
+            log_success "已选择: ${GREEN}${SELECTED_SHELL}${NC} ${DIM}(${SELECTED_SHELL_PATH})${NC}"
+            echo
+            return 0
+        else
+            echo -e "  ${RED}无效选择,请重试${NC}"
+        fi
+    done
 }
 
 # 显示完成信息
@@ -320,15 +428,19 @@ EOF
     echo -e "${CYAN}${BOLD}📁 配置信息${NC}"
     print_separator
     echo -e "${WHITE}  配置目录:${NC} ${WEZTERM_CONFIG_DIR}"
-    if [[ -d "$BACKUP_DIR" ]]; then
-        echo -e "${WHITE}  备份目录:${NC} ${BACKUP_DIR}"
+    if [[ -n "$SELECTED_SHELL" ]]; then
+        echo -e "${WHITE}  默认 Shell:${NC} ${GREEN}${SELECTED_SHELL}${NC}"
     fi
     echo
 
     echo -e "${CYAN}${BOLD}🚀 下一步操作${NC}"
     print_separator
     echo -e "${WHITE}  1.${NC} 启动或重启 WezTerm"
-    echo -e "${WHITE}  2.${NC} 配置将自动检测您的 shell 环境"
+    if [[ -n "$SELECTED_SHELL" ]]; then
+        echo -e "${WHITE}  2.${NC} WezTerm 将使用您选择的 ${GREEN}${SELECTED_SHELL}${NC}"
+    else
+        echo -e "${WHITE}  2.${NC} 配置将自动检测您的 shell 环境"
+    fi
     echo -e "${WHITE}  3.${NC} 按 ${MAGENTA}F2${NC} 查看命令面板"
     echo -e "${WHITE}  4.${NC} 查看完整文档: ${DIM}${WEZTERM_CONFIG_DIR}/README.md${NC}"
     echo
@@ -349,12 +461,13 @@ EOF
 main() {
     print_banner
     check_dependencies
+    detect_and_select_shell
     check_wezterm
-    backup_existing_config
+    prepare_config_dir        # 清理现有配置,不备份
     clone_config_repo
     install_shell_detect
+    apply_shell_preference    # 应用用户选择
     update_config
-    detect_shell_env
     show_completion
 }
 
