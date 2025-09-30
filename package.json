@@ -1,0 +1,50 @@
+{
+  "name": "wezterm-universal-setup",
+  "version": "1.0.0",
+  "description": "🚀 Universal WezTerm configuration installer with automatic shell detection",
+  "main": "index.js",
+  "bin": {
+    "wezterm-setup": "./index.js"
+  },
+  "scripts": {
+    "install": "node index.js",
+    "test": "echo \"No tests specified\"",
+    "postinstall": "echo \"✨ Installation complete! Run 'npx wezterm-universal-setup' to set up WezTerm.\""
+  },
+  "keywords": [
+    "wezterm",
+    "terminal",
+    "shell",
+    "configuration",
+    "setup",
+    "installer",
+    "fish",
+    "bash",
+    "zsh",
+    "powershell",
+    "nushell",
+    "cli"
+  ],
+  "author": "KOOI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/wezterm-universal-setup.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/wezterm-universal-setup/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/wezterm-universal-setup#readme",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "files": [
+    "index.js",
+    "install.sh",
+    "install.ps1",
+    "config/",
+    "scripts/",
+    "README.md",
+    "LICENSE"
+  ]
+}
