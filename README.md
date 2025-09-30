@@ -88,17 +88,17 @@ npx wezterm-universal-setup
 
 ```bash
 # 使用 curl
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/wezterm-universal-setup/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/telagod/wezterm-universal-setup/main/install.sh | bash
 
 # 或使用 wget
-wget -qO- https://raw.githubusercontent.com/YOUR_USERNAME/wezterm-universal-setup/main/install.sh | bash
+wget -qO- https://raw.githubusercontent.com/telagod/wezterm-universal-setup/main/install.sh | bash
 ```
 
 #### Windows PowerShell
 
 ```powershell
 # 使用 iwr (Invoke-WebRequest)
-iwr -useb https://raw.githubusercontent.com/YOUR_USERNAME/wezterm-universal-setup/main/install.ps1 | iex
+iwr -useb https://raw.githubusercontent.com/telagod/wezterm-universal-setup/main/install.ps1 | iex
 ```
 
 ### 方式 3: 本地安装
@@ -106,7 +106,7 @@ iwr -useb https://raw.githubusercontent.com/YOUR_USERNAME/wezterm-universal-setu
 #### 克隆仓库
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/wezterm-universal-setup.git
+git clone https://github.com/telagod/wezterm-universal-setup.git
 cd wezterm-universal-setup
 ```
 
@@ -484,7 +484,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 - **原始配置项目**: [KevinSilvester/wezterm-config](https://github.com/KevinSilvester/wezterm-config)
 - **WezTerm 官网**: [wezfurlong.org/wezterm](https://wezfurlong.org/wezterm/)
 - **WezTerm GitHub**: [github.com/wez/wezterm](https://github.com/wez/wezterm)
-- **问题反馈**: [GitHub Issues](https://github.com/YOUR_USERNAME/wezterm-universal-setup/issues)
+- **问题反馈**: [GitHub Issues](https://github.com/telagod/wezterm-universal-setup/issues)
 
 ---
 
@@ -534,10 +534,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ## 📊 项目状态
 
-![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/wezterm-universal-setup?style=social)
-![GitHub forks](https://img.shields.io/github/forks/YOUR_USERNAME/wezterm-universal-setup?style=social)
-![GitHub issues](https://img.shields.io/github/issues/YOUR_USERNAME/wezterm-universal-setup)
-![GitHub pull requests](https://img.shields.io/github/issues-pr/YOUR_USERNAME/wezterm-universal-setup)
+![GitHub stars](https://img.shields.io/github/stars/telagod/wezterm-universal-setup?style=social)
+![GitHub forks](https://img.shields.io/github/forks/telagod/wezterm-universal-setup?style=social)
+![GitHub issues](https://img.shields.io/github/issues/telagod/wezterm-universal-setup)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/telagod/wezterm-universal-setup)
 
 ---
 
