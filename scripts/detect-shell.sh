@@ -88,9 +88,11 @@ main() {
     log_info "检测可用的 Shell 列表:"
     echo
 
-    # 检测所有可用 shell
-    local available_shells
-    mapfile -t available_shells < <(detect_available_shells)
+    # 检测所有可用 shell（兼容 Bash 3.2+）
+    local available_shells=()
+    while IFS= read -r line; do
+        available_shells+=("$line")
+    done < <(detect_available_shells)
 
     if [[ ${#available_shells[@]} -eq 0 ]]; then
         log_warn "未检测到任何已知的 Shell"

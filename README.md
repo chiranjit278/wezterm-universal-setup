@@ -134,7 +134,7 @@ cd wezterm-universal-setup
 
 ### 可选 (用于 NPX 安装)
 
-- **Node.js** >= 12.0.0
+- **Node.js** >= 16.0.0
 - **npm** 或 **yarn**
 
 ### 推荐
