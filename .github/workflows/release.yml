@@ -5,9 +5,13 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   release:
-    name: Create Release
+    name: Create Release and Publish
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +22,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@telagod'
 
       - name: Get version from tag
         id: version
@@ -32,18 +37,35 @@ jobs:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body: |
-            ## WezTerm Universal Setup ${{ steps.version.outputs.VERSION }}
+            ## 🚀 WezTerm Universal Setup ${{ steps.version.outputs.VERSION }}
 
-            ### 安装方式
+            一键配置您的 WezTerm 终端美化方案，支持自动检测多种 Shell 环境！
 
-            **NPX (推荐):**
+            ### 📦 安装方式
+
+            #### 方式 1: NPX（GitHub Packages）
+
+            首先配置 GitHub Packages 认证：
             ```bash
-            npx wezterm-universal-setup
+            # 创建 GitHub Personal Access Token (read:packages)
+            # 访问: https://github.com/settings/tokens
+
+            # 配置 npm
+            npm config set @telagod:registry https://npm.pkg.github.com
+            npm config set //npm.pkg.github.com/:_authToken YOUR_TOKEN
+
+            # 使用 npx 安装
+            npx @telagod/wezterm-universal-setup
             ```
+
+            #### 方式 2: curl/wget（推荐，无需认证）
 
             **Unix/Linux/macOS:**
             ```bash
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
+
+            # 或使用 wget
+            wget -qO- https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | bash
             ```
 
             **Windows:**
@@ -51,14 +73,62 @@ jobs:
             iwr -useb https://raw.githubusercontent.com/${{ github.repository }}/main/install.ps1 | iex
             ```
 
-            ### 更新日志
+            #### 方式 3: 本地安装
 
-            请查看 [完整更新日志](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+            ```bash
+            git clone https://github.com/${{ github.repository }}.git
+            cd wezterm-universal-setup
+            ./install.sh  # 或 .\install.ps1 (Windows)
+            ```
+
+            ### ✨ 主要特性
+
+            - 🔍 **自动检测** 系统中所有可用的 Shell（Bash, Zsh, Fish, PowerShell 等）
+            - 🌐 **跨平台支持** Linux, macOS, Windows
+            - 🎨 **美化 CLI** 彩色输出、图标、加载动画
+            - 📦 **多种安装方式** NPX, curl, wget, PowerShell, 本地安装
+            - 🔧 **零配置** 开箱即用，自动选择最佳 Shell
+            - 💾 **安全备份** 自动备份现有配置
+
+            ### 📚 文档
+
+            - [完整文档](https://github.com/${{ github.repository }})
+            - [更新日志](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md)
+            - [安装指南](https://github.com/${{ github.repository }}#-快速开始)
+            - [故障排除](https://github.com/${{ github.repository }}#-故障排除)
+
+            ### 🎯 支持的 Shell
+
+            - Bash
+            - Zsh
+            - Fish
+            - PowerShell (Core & Desktop)
+            - Nushell
+            - Git Bash
+            - Command Prompt
+
+            ### 🙏 致谢
+
+            基于 [KevinSilvester/wezterm-config](https://github.com/KevinSilvester/wezterm-config) 的优秀配置
+
+            ---
+
+            Made with ❤️ by KOOI
           draft: false
           prerelease: false
 
-      - name: Publish to NPM
+      - name: Publish to GitHub Packages
         run: |
+          echo "📦 Publishing to GitHub Packages..."
           npm publish
+          echo "✅ Published successfully!"
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify publication
+        run: |
+          echo "🔍 Verifying package publication..."
+          sleep 5
+          gh api /users/${{ github.repository_owner }}/packages/npm/wezterm-universal-setup || echo "Package info will be available shortly"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
