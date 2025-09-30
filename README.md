@@ -28,7 +28,6 @@
 <td width="50%">
 
 ### 🎯 一键安装
-- **NPX 在线安装** - 无需克隆仓库
 - **curl/wget** - 传统 Unix 方式
 - **PowerShell** - Windows 原生支持
 - **本地安装** - 离线环境可用
@@ -73,41 +72,7 @@
 
 ## 🚀 快速开始
 
-### 方式 1: NPX 在线安装 (推荐 ⭐)
-
-最简单的方式，从 GitHub Packages 安装：
-
-```bash
-# 使用 npx (需要 Node.js >= 16.0.0)
-npx @telagod/wezterm-universal-setup
-```
-
-> **注意**: 首次使用需要配置 GitHub Packages 认证（见下方说明）
-
-#### GitHub Packages 配置
-
-为了从 GitHub Packages 安装，需要先配置认证：
-
-```bash
-# 1. 创建 GitHub Personal Access Token
-#    访问: https://github.com/settings/tokens
-#    权限: read:packages
-
-# 2. 配置 npm 认证（选择以下任一方式）
-
-# 方式 A: 全局配置
-npm config set @telagod:registry https://npm.pkg.github.com
-npm config set //npm.pkg.github.com/:_authToken YOUR_GITHUB_TOKEN
-
-# 方式 B: 项目级配置（创建 .npmrc 文件）
-echo "@telagod:registry=https://npm.pkg.github.com" > ~/.npmrc
-echo "//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN" >> ~/.npmrc
-
-# 3. 然后就可以使用 npx 安装了
-npx @telagod/wezterm-universal-setup
-```
-
-### 方式 2: curl/wget 在线安装
+### 方式 1: curl/wget 在线安装 (推荐 ⭐)
 
 #### Linux / macOS
 
@@ -126,7 +91,7 @@ wget -qO- https://raw.githubusercontent.com/telagod/wezterm-universal-setup/main
 iwr -useb https://raw.githubusercontent.com/telagod/wezterm-universal-setup/main/install.ps1 | iex
 ```
 
-### 方式 3: 本地安装
+### 方式 2: 本地安装
 
 #### 克隆仓库
 
@@ -157,10 +122,9 @@ cd wezterm-universal-setup
   推荐: [Nightly 版本](https://github.com/wez/wezterm/releases/nightly)
 - **Git**
 
-### 可选 (用于 NPX 安装)
+### 可选 (用于本地开发)
 
 - **Node.js** >= 16.0.0
-- **npm** 或 **yarn**
 
 ### 推荐
 
@@ -264,10 +228,9 @@ cd wezterm-universal-setup
 wezterm-universal-setup/
 ├── 📄 README.md                    # 本文档
 ├── 📄 LICENSE                      # MIT 许可证
-├── 📄 package.json                 # NPM 包配置
+├── 📄 package.json                 # 项目配置
 ├── 📄 .gitignore                   # Git 忽略规则
 │
-├── 🚀 index.js                     # NPX 入口点
 ├── 🚀 install.sh                   # Unix/Linux/macOS 安装脚本
 ├── 🚀 install.ps1                  # Windows PowerShell 安装脚本
 │
