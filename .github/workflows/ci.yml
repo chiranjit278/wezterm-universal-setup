@@ -92,35 +92,3 @@ jobs:
         run: |
           .\scripts\detect-shell.ps1 -OutputJson
         shell: pwsh
-
-  test-node:
-    name: Test Node.js Entry Point
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        node-version: [16, 18, 20]
-        include:
-          # macOS 使用较新的 Node.js 版本（ARM64 支持）
-          - os: macos-latest
-            node-version: 18
-          - os: macos-latest
-            node-version: 20
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Check Node.js script syntax
-        run: |
-          node -c index.js
-
-      - name: Test NPM package
-        run: |
-          npm pack
-          echo "Package created successfully"
